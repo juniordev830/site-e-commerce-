@@ -1,0 +1,6 @@
+# Nome exibido no topo do site
+VITE_STORE_NAME="Minha Loja"
+
+# Só é necessário se a API estiver em outro domínio. Em desenvolvimento, deixe vazio:
+# o Vite encaminha /api para o backend.
+VITE_API_URL=
