@@ -10,6 +10,12 @@ export default function Home() {
       <p className="lead">
         A estrutura está pronta: cadastro, login e sessão segura. Os produtos entram na próxima etapa do projeto.
       </p>
+      {loading && (
+        <div className="loading-state" role="status" aria-live="polite">
+          <span className="loading-dot" aria-hidden="true" />
+          Preparando sua experiência...
+        </div>
+      )}
       {!loading && !user && (
         <div className="actions">
           <Link to="/cadastro" className="btn btn-primary">
