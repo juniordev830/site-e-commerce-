@@ -2,7 +2,7 @@
 
 Plataforma de e-commerce full-stack, construída em fases. Cada fase entrega algo que roda e pode ser testado.
 
-**Status atual: Fase 1 concluída** (base do projeto, banco de dados e autenticação).
+**Status atual: Fase 1 concluída** (base do projeto, banco de dados, autenticação e primeira camada visual responsiva).
 
 ## Stack
 
@@ -168,6 +168,7 @@ Erros seguem o formato `{ "error": "mensagem" }`. Erros de validação trazem ta
 ## Roadmap
 
 - [x] **Fase 1: Base.** Estrutura, banco, cadastro, login e sessão.
+- [x] **Polimento visual inicial.** Identidade visual, estados de carregamento, responsividade, acessibilidade e metadados da vitrine.
 - [ ] **Fase 2: Catálogo.** Produtos, categorias, busca e página de detalhes.
 - [ ] **Fase 3: Compra.** Carrinho, checkout, pedidos e pagamento (Pix e cartão).
 - [ ] **Fase 4: Administração.** Painel para produtos, estoque e pedidos.
