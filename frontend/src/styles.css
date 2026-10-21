@@ -130,6 +130,27 @@ a {
 
 .main {
   padding-block: clamp(2.5rem, 8vw, 5.5rem);
+  min-height: calc(100vh - 9rem);
+}
+
+.site-footer {
+  border-top: 1px solid var(--line);
+  background: #eef3ed;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.footer-inner {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 1.25rem;
+}
+
+.footer-inner span:first-child {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-weight: 700;
 }
 
 /* Botões */
@@ -373,6 +394,7 @@ a {
   .main { padding-block: 2.5rem; }
   .hero-showcase { grid-template-columns: 1fr; }
   .showcase-card { min-height: 10rem; }
+  .footer-inner { align-items: flex-start; flex-direction: column; }
 }
 
 @media (prefers-reduced-motion: reduce) {

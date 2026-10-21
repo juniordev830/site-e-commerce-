@@ -36,6 +36,12 @@ export function Layout() {
       <main className="container main">
         <Outlet />
       </main>
+      <footer className="site-footer">
+        <div className="container footer-inner">
+          <span>{STORE_NAME}</span>
+          <span>Uma experiência de compra simples e segura.</span>
+        </div>
+      </footer>
     </>
   );
 }
