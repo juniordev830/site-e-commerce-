@@ -24,6 +24,16 @@ export default function Home() {
         <h2>Nenhum produto na vitrine</h2>
         <p>Quando o catálogo for cadastrado, os produtos aparecem nesta página.</p>
       </div>
+      <div className="hero-showcase" aria-label="Destaques da loja">
+        <article className="showcase-card">
+          <span className="showcase-label">Feito para você</span>
+          <strong>Uma experiência simples para comprar melhor.</strong>
+        </article>
+        <article className="showcase-card accent">
+          <span className="showcase-label">Em breve</span>
+          <strong>Catálogo, carrinho e pedidos em um só lugar.</strong>
+        </article>
+      </div>
     </section>
   );
 }
