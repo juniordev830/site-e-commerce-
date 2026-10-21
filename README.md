@@ -121,7 +121,7 @@ npm run dev
 
 No GitHub Codespaces, abra a porta 5173 na aba **Portas**. O frontend encaminha `/api` para o backend, então o navegador só conversa com uma origem e o cookie de sessão funciona sem configuração extra.
 
-Depois do primeiro `db:migrate`, faça commit da pasta `backend/prisma/migrations`: ela é o histórico versionado do banco.
+As migrações ficam versionadas em `backend/prisma/migrations`. Em produção, use `npm run db:deploy` em vez de `db:migrate`.
 
 ## Variáveis de ambiente
 
@@ -181,6 +181,7 @@ Erros seguem o formato `{ "error": "mensagem" }`. Erros de validação trazem ta
 | `npm run build` | Compila backend e frontend |
 | `npm run typecheck` | Verifica os tipos do TypeScript nos dois projetos |
 | `npm run db:migrate` | Cria e aplica migrações no banco de desenvolvimento |
+| `npm run db:deploy` | Aplica apenas migrações já versionadas |
 | `npm run db:seed` | Cria o administrador |
 | `npm run db:studio` | Abre o Prisma Studio para ver os dados |
 

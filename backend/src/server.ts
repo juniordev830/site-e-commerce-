@@ -9,7 +9,7 @@ const server = app.listen(config.PORT, () => {
 });
 
 async function shutdown() {
-  server.close();
+  await new Promise<void>((resolve) => server.close(() => resolve()));
   await prisma.$disconnect();
   process.exit(0);
 }

@@ -10,6 +10,8 @@ import { authRouter } from "./routes/auth.js";
 export function createApp() {
   const app = express();
 
+  app.set("trust proxy", config.NODE_ENV === "production" ? 1 : 0);
+
   app.use(helmet());
   app.use(
     cors({
