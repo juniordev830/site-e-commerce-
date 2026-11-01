@@ -1,6 +1,7 @@
 import { Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import Home from "./pages/Home";
+import Cart from "./pages/Cart";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import Register from "./pages/Register";
@@ -10,6 +11,7 @@ export default function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<Home />} />
+        <Route path="carrinho" element={<Cart />} />
         <Route path="entrar" element={<Login />} />
         <Route path="cadastro" element={<Register />} />
         <Route path="*" element={<NotFound />} />

@@ -43,6 +43,10 @@ A API pública oferece `GET /api/products` (paginação e filtros `search`/`cate
 
 Usuários autenticados podem criar pedidos com `POST /api/orders` enviando uma lista de `items` (`productId` e `quantity`). O servidor calcula o total usando os preços do banco, registra o preço unitário no item e decrementa o estoque dentro de uma transação com verificação condicional para evitar estoque negativo. `GET /api/orders` e `GET /api/orders/:id` retornam apenas pedidos do usuário autenticado. Os pedidos ficam com status `PENDING`; gateway de pagamento, entrega e fluxo completo de checkout ainda não estão implementados.
 
+## Frontend: carrinho e pedidos
+
+A página inicial permite adicionar produtos ao carrinho, que é guardado localmente no navegador. A rota `/carrinho` permite ajustar quantidades, remover itens e enviar um pedido autenticado para `POST /api/orders`. O servidor recalcula o total, valida o estoque e registra o pedido como `PENDING`. Não há gateway de pagamento, cobrança ou entrega real nesta versão.
+
 ## Verificações
 
 ```bash
