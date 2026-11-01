@@ -7,6 +7,7 @@ import { prisma } from "./lib/prisma.js";
 import { errorHandler, notFound } from "./middleware/errors.js";
 import { authRouter } from "./routes/auth.js";
 import { productsRouter } from "./routes/products.js";
+import { ordersRouter } from "./routes/orders.js";
 
 export function createApp() {
   const app = express();
@@ -34,6 +35,7 @@ export function createApp() {
 
   app.use("/api/auth", authRouter);
   app.use("/api/products", productsRouter);
+  app.use("/api/orders", ordersRouter);
 
   app.use(notFound);
   app.use(errorHandler);

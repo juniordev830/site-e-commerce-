@@ -39,6 +39,10 @@ O comando raiz inicia os workspaces de backend e frontend em paralelo. Consulte 
 
 A API pública oferece `GET /api/products` (paginação e filtros `search`/`category`) e `GET /api/products/:slug`. Administradores autenticados podem cadastrar produtos com `POST /api/products`; o corpo aceita `name`, `slug`, `description`, `priceCents`, `stock` e campos opcionais `imageUrl` (HTTPS) e `categoryId`. Valores monetários são informados em centavos. O catálogo mostra apenas produtos ativos.
 
+## Pedidos
+
+Usuários autenticados podem criar pedidos com `POST /api/orders` enviando uma lista de `items` (`productId` e `quantity`). O servidor calcula o total usando os preços do banco, registra o preço unitário no item e decrementa o estoque dentro de uma transação com verificação condicional para evitar estoque negativo. `GET /api/orders` e `GET /api/orders/:id` retornam apenas pedidos do usuário autenticado. Os pedidos ficam com status `PENDING`; gateway de pagamento, entrega e fluxo completo de checkout ainda não estão implementados.
+
 ## Verificações
 
 ```bash
