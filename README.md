@@ -35,6 +35,10 @@ npm run dev
 
 O comando raiz inicia os workspaces de backend e frontend em paralelo. Consulte as mensagens de inicialização para confirmar as portas usadas localmente.
 
+## Catálogo
+
+A API pública oferece `GET /api/products` (paginação e filtros `search`/`category`) e `GET /api/products/:slug`. Administradores autenticados podem cadastrar produtos com `POST /api/products`; o corpo aceita `name`, `slug`, `description`, `priceCents`, `stock` e campos opcionais `imageUrl` (HTTPS) e `categoryId`. Valores monetários são informados em centavos. O catálogo mostra apenas produtos ativos.
+
 ## Verificações
 
 ```bash
