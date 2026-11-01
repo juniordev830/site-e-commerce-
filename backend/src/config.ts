@@ -12,10 +12,16 @@ const envSchema = z
     JWT_EXPIRES_SECONDS: z.coerce.number().int().positive().default(60 * 60 * 24 * 7),
     CORS_ORIGIN: z.string().default("http://localhost:5173"),
   })
-  .refine((env) => env.NODE_ENV !== "production" || !env.JWT_SECRET.startsWith("troque"), {
-    path: ["JWT_SECRET"],
-    message: "Defina um JWT_SECRET real em produção",
-  });
+  .refine(
+    (env) =>
+      env.NODE_ENV !== "production" ||
+      (env.JWT_SECRET.length >= 32 && !/^(troque|change[-_ ]?me|changeme|secret|your[-_ ]?jwt)/i.test(env.JWT_SECRET)),
+    {
+      path: ["JWT_SECRET"],
+      message:
+        "Em produção, JWT_SECRET deve ter pelo menos 32 caracteres e não pode ser um valor de exemplo.",
+    },
+  );
 
 const parsed = envSchema.safeParse(process.env);
 
