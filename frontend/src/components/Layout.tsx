@@ -1,9 +1,18 @@
 import { Link, Outlet } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
+import { cartUpdatedEvent, readCart } from "../lib/cart";
 import { STORE_NAME } from "../lib/api";
 
 export function Layout() {
   const { user, loading, logout } = useAuth();
+  const [cartCount, setCartCount] = useState(() => readCart().reduce((sum, item) => sum + item.quantity, 0));
+
+  useEffect(() => {
+    const syncCart = () => setCartCount(readCart().reduce((sum, item) => sum + item.quantity, 0));
+    window.addEventListener(cartUpdatedEvent, syncCart);
+    return () => window.removeEventListener(cartUpdatedEvent, syncCart);
+  }, []);
 
   return (
     <>
@@ -13,6 +22,7 @@ export function Layout() {
             {STORE_NAME}
           </Link>
           <nav className="nav" aria-label="Conta">
+            <Link to="/carrinho" className="nav-link">Carrinho ({cartCount})</Link>
             {loading ? null : user ? (
               <>
                 <span className="nav-user">Olá, {user.name.split(" ")[0]}</span>
