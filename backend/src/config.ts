@@ -15,6 +15,10 @@ const envSchema = z
   .refine((env) => env.NODE_ENV !== "production" || !env.JWT_SECRET.startsWith("troque"), {
     path: ["JWT_SECRET"],
     message: "Defina um JWT_SECRET real em produção",
+  })
+  .refine((env) => env.NODE_ENV !== "production" || env.JWT_SECRET.length >= 32, {
+    path: ["JWT_SECRET"],
+    message: "Em produção, JWT_SECRET precisa ter ao menos 32 caracteres aleatórios",
   });
 
 const parsed = envSchema.safeParse(process.env);
