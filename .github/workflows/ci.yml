@@ -17,21 +17,15 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - name: Install locked dependencies without automatic lifecycle scripts
+        run: npm ci --ignore-scripts
+      - name: Build the pinned SQLite native dependency
+        run: npm rebuild better-sqlite3
+      - name: Generate the Prisma client using the repository script
+        run: npm run postinstall -w backend
       - name: Audit dependency vulnerabilities
         run: npm audit --audit-level=high
       - run: npm run typecheck
       - run: npm run build
       - name: Integration tests for checkout and authorization
         run: npm run test -w backend
-      - name: Read public quality findings for diagnosis
-        if: always()
-        run: |
-          python3 - <<'PY'
-          import json, urllib.request
-          url = "https://sonarcloud.io/api/issues/search?componentKeys=juniordev830_site-e-commerce&branch=main&resolved=false&ps=100"
-          data = json.load(urllib.request.urlopen(url))
-          for issue in data.get("issues", []):
-              print(json.dumps({key: issue.get(key) for key in ("rule", "component", "line", "message", "type", "severity")}))
-          print("total", data.get("total"))
-          PY
