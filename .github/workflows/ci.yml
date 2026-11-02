@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  checks: read
 
 jobs:
   validate:
@@ -24,3 +25,22 @@ jobs:
       - run: npm run build
       - name: Integration tests for checkout and authorization
         run: npm exec -w backend -- tsx --test tests/checkout.test.ts
+      - name: Report external quality annotations
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          GH_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.request
+          base = "https://api.github.com/repos/" + os.environ["GH_REPO"]
+          def read(url):
+              request = urllib.request.Request(url, headers={"Authorization": "Bearer " + os.environ["GH_TOKEN"], "Accept": "application/vnd.github+json"})
+              return json.load(urllib.request.urlopen(request))
+          checks = read(base + "/commits/" + os.environ["GH_HEAD"] + "/check-runs")
+          for check in checks["check_runs"]:
+              if check["name"] == "SonarCloud Code Analysis":
+                  for note in read(check["output"]["annotations_url"]):
+                      print(json.dumps({key: note.get(key) for key in ("path", "start_line", "message", "title")}))
+          PY
