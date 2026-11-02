@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "project_kind": "E-commerce TypeScript / Express / Prisma",
+  "entry_points": [
+    "backend/src/routes/orders.ts",
+    "backend/src/middleware/auth.ts",
+    "frontend/src/App.tsx"
+  ],
+  "test_commands": [
+    "npm run typecheck",
+    "npm run test -w backend"
+  ],
+  "review_focus": [
+    "Autorização e integridade de pedidos",
+    "Dinheiro, estoque e limites do checkout"
+  ]
+}
