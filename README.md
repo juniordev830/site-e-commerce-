@@ -83,6 +83,8 @@ Use `npm run db:studio` para inspecionar o banco quando a configuração local e
 - Validar autorização no backend, não apenas na interface.
 - Usar dados fictícios durante desenvolvimento.
 - Revisar autenticação, autorização, migrações e fluxo de erros antes de produção.
+- A API não confia em cabeçalhos encaminhados por proxy por padrão. Se estiver atrás de um reverse proxy conhecido, configure `TRUST_PROXY_HOPS` com o número exato de saltos confiáveis; não habilite confiança genérica em `X-Forwarded-For`.
+- Com `TRUST_PROXY_HOPS=0`, a limitação de tentativas usa o endereço da conexão direta. Em hospedagem atrás de proxy, configure o número correto para que os limites por IP funcionem sem permitir que clientes falsifiquem o IP encaminhado.
 
 ## Estado e próximas etapas
 
