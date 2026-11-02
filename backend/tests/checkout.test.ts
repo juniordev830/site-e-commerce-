@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
+import { DatabaseSync } from "node:sqlite";
+import { randomBytes } from "node:crypto";
 import { once } from "node:events";
 
 test("checkout enforces sessions, ownership, stock and monetary bounds", async () => {
@@ -11,9 +12,11 @@ test("checkout enforces sessions, ownership, stock and monetary bounds", async (
   const db = path.join(dir, "test.db");
   process.env.DATABASE_URL = "file:" + db;
   process.env.NODE_ENV = "test";
-  process.env.JWT_SECRET = "test-only-secret-with-more-than-32-characters";
+  process.env.JWT_SECRET = randomBytes(32).toString("hex");
   const migration = readFileSync(new URL("../prisma/migrations/0001_init/migration.sql", import.meta.url), "utf8");
-  execFileSync("python3", ["-c", "import sqlite3,sys; c=sqlite3.connect(sys.argv[1]); c.executescript(sys.stdin.read()); c.close()", db], {input: migration});
+  const setup = new DatabaseSync(db);
+  setup.exec(migration);
+  setup.close();
   const {createApp} = await import("../src/app.js");
   const {prisma} = await import("../src/lib/prisma.js");
   const server = createApp().listen(0, "127.0.0.1");
