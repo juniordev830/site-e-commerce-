@@ -41,7 +41,7 @@ A API pública oferece `GET /api/products` (paginação e filtros `search`/`cate
 
 ## Pedidos
 
-Usuários autenticados podem criar pedidos com `POST /api/orders` enviando uma lista de `items` (`productId` e `quantity`). O servidor calcula o total usando os preços do banco, registra o preço unitário no item e decrementa o estoque dentro de uma transação com verificação condicional para evitar estoque negativo. `GET /api/orders` e `GET /api/orders/:id` retornam apenas pedidos do usuário autenticado. Os pedidos ficam com status `PENDING`; gateway de pagamento, entrega e fluxo completo de checkout ainda não estão implementados.
+Usuários autenticados podem criar pedidos com `POST /api/orders` enviando uma lista de `items` (`productId` e `quantity`). O servidor calcula o total usando os preços do banco, registra o preço unitário no item e decrementa o estoque dentro de uma transação com verificação condicional para evitar estoque negativo. `GET /api/orders` e `GET /api/orders/:id` retornam apenas pedidos do usuário autenticado. A listagem aceita `page` (padrão 1, máximo 100.000) e `limit` (padrão 20, máximo 50), ordena por data e ID e devolve `{ orders, pagination: { page, limit, total, pages } }`. Valores fora desses limites retornam HTTP 400. Os pedidos ficam com status `PENDING`; gateway de pagamento, entrega e fluxo completo de checkout ainda não estão implementados.
 
 ## Frontend: carrinho e pedidos
 
