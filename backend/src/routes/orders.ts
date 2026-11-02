@@ -16,16 +16,31 @@ const orderSchema = z.object({
   }
 });
 
+const ordersListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).max(100_000).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+
 export const ordersRouter = Router();
 ordersRouter.use(requireAuth);
 
 ordersRouter.get("/", async (req, res) => {
-  const orders = await prisma.order.findMany({
-    where: { userId: req.userId! },
-    include: { items: { include: { product: { select: { id: true, name: true, slug: true, imageUrl: true } } } } },
-    orderBy: { createdAt: "desc" },
-  });
-  res.json({ orders });
+  const parsed = ordersListQuerySchema.safeParse(req.query);
+  if (!parsed.success) throw new HttpError(400, "Paginação de pedidos inválida");
+  const { page, limit } = parsed.data;
+  const where = { userId: req.userId! };
+  // Cap response size and keep every query scoped to the authenticated owner.
+  const [orders, total] = await Promise.all([
+    prisma.order.findMany({
+      where,
+      include: { items: { include: { product: { select: { id: true, name: true, slug: true, imageUrl: true } } } } },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.order.count({ where }),
+  ]);
+  res.json({ orders, pagination: { page, limit, total, pages: Math.ceil(total / limit) } });
 });
 
 ordersRouter.get("/:id", async (req, res) => {
