@@ -5,11 +5,16 @@ import { HttpError } from "./errors.js";
 
 export const COOKIE_NAME = "token";
 
+const JWT_ISSUER = "site-e-commerce";
+const JWT_AUDIENCE = "site-e-commerce-api";
+
 export function signToken(userId: string): string {
   return jwt.sign({}, config.JWT_SECRET, {
     subject: userId,
     expiresIn: config.JWT_EXPIRES_SECONDS,
     algorithm: "HS256",
+    issuer: JWT_ISSUER,
+    audience: JWT_AUDIENCE,
   });
 }
 
@@ -21,7 +26,11 @@ export const requireAuth: RequestHandler = (req, _res, next) => {
 
   let userId: string | undefined;
   try {
-    const payload = jwt.verify(token, config.JWT_SECRET, { algorithms: ["HS256"] });
+    const payload = jwt.verify(token, config.JWT_SECRET, {
+      algorithms: ["HS256"],
+      issuer: JWT_ISSUER,
+      audience: JWT_AUDIENCE,
+    });
     userId = typeof payload === "string" ? undefined : payload.sub;
   } catch {
     userId = undefined;
