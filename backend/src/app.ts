@@ -12,7 +12,9 @@ import { ordersRouter } from "./routes/orders.js";
 export function createApp() {
   const app = express();
 
-  app.set("trust proxy", config.NODE_ENV === "production" ? 1 : 0);
+  // Do not trust forwarded headers by default. Configure the exact proxy-hop
+  // count only when the application is deployed behind known reverse proxies.
+  app.set("trust proxy", config.TRUST_PROXY_HOPS);
 
   app.use(helmet());
   app.use(
