@@ -57,7 +57,18 @@ ordersRouter.post("/", async (req, res) => {
       });
       if (stockUpdate.count !== 1) throw new HttpError(409, `Estoque insuficiente para ${product.name}`);
 
-      totalCents += product.priceCents * item.quantity;
+      // Prisma Int/SQLite INTEGER is a signed 32-bit value; reject totals that
+      // cannot be persisted instead of allowing an overflow at order creation.
+      const lineTotalCents = product.priceCents * item.quantity;
+      const maxPersistableCents = 2_147_483_647;
+      if (
+        !Number.isSafeInteger(lineTotalCents) ||
+        totalCents > maxPersistableCents - lineTotalCents
+      ) {
+        throw new HttpError(400, "Valor total do pedido excede o limite permitido");
+      }
+
+      totalCents += lineTotalCents;
       orderItems.push({ productId: product.id, quantity: item.quantity, unitPriceCents: product.priceCents });
     }
 
