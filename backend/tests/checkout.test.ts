@@ -45,6 +45,23 @@ test("checkout enforces sessions, ownership, stock and monetary bounds", async (
     assert.equal(order.totalCents, 1000);
     assert.equal((await prisma.product.findUniqueOrThrow({where: {id: product.id}})).stock, 1);
     assert.equal((await request("/orders/" + order.id, undefined, otherCookie)).status, 404);
+
+    // Listings must be bounded, stable, and isolated between customers.
+    const firstPage = await request("/orders?page=1&limit=1", undefined, cookie);
+    assert.equal(firstPage.status, 200);
+    const firstPageBody = await firstPage.json();
+    assert.equal(firstPageBody.orders.length, 1);
+    assert.equal(firstPageBody.orders[0].id, order.id);
+    assert.deepEqual(firstPageBody.pagination, {page: 1, limit: 1, total: 1, pages: 1});
+    const emptyPage = await request("/orders?page=2&limit=1", undefined, cookie);
+    assert.equal(emptyPage.status, 200);
+    assert.deepEqual((await emptyPage.json()).orders, []);
+    const otherOrders = await request("/orders", undefined, otherCookie);
+    assert.equal(otherOrders.status, 200);
+    assert.equal((await otherOrders.json()).pagination.total, 0);
+    for (const query of ["page=0", "page=100001", "limit=51", "limit=0", "page=NaN"]) {
+      assert.equal((await request("/orders?" + query, undefined, cookie)).status, 400, query);
+    }
     assert.equal((await request("/orders", {items: [{productId: product.id, quantity: 2}]}, cookie)).status, 409);
     await prisma.product.update({where: {id: product.id}, data: {priceCents: 100000000, stock: 99}});
     assert.equal((await request("/orders", {items: [{productId: product.id, quantity: 99}]}, cookie)).status, 400);
