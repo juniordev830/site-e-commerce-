@@ -11,6 +11,8 @@ const envSchema = z
     JWT_SECRET: z.string().min(16, "JWT_SECRET precisa ter ao menos 16 caracteres"),
     JWT_EXPIRES_SECONDS: z.coerce.number().int().positive().default(60 * 60 * 24 * 7),
     CORS_ORIGIN: z.string().default("http://localhost:5173"),
+    // Trust only the explicitly configured number of reverse-proxy hops.
+    TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(0),
   })
   .refine(
     (env) =>
