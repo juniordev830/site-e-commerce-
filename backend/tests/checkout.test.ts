@@ -30,6 +30,9 @@ test("checkout enforces sessions, ownership, stock and monetary bounds", async (
     ...(body === undefined ? {} : {body: JSON.stringify(body)})
   });
   try {
+    const live = await request("/health/live");
+    assert.equal(live.status, 200);
+    assert.deepEqual(await live.json(), {status: "ok"});
     assert.equal((await request("/orders")).status, 401);
     const signup = await request("/auth/register", {name: "Alice", email: "alice@example.com", password: "safe-password-123"});
     assert.equal(signup.status, 201);
