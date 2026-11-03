@@ -35,6 +35,10 @@ export function createApp() {
     }
   });
 
+  app.get("/api/health/live", (_req, res) => {
+    res.json({ status: "ok" });
+  });
+
   app.use("/api/auth", authRouter);
   app.use("/api/products", productsRouter);
   app.use("/api/orders", ordersRouter);
