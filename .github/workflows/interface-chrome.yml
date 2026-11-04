@@ -18,6 +18,17 @@ jobs:
       - run: python -m pip install selenium==4.38.0
       - name: Verificar desktop e celular
         run: |
+          # Catálogo efêmero para o teste visual, sem depender da API ou de contas.
+          mkdir -p frontend/dist/api
+          python - <<'FIXTURE'
+          import json
+          from pathlib import Path
+          products = [
+              {"id": "demo-1", "name": "Caderno pontilhado", "slug": "caderno", "description": "Capa rígida e 80 folhas.", "priceCents": 3990, "stock": 8, "imageUrl": None, "category": {"name": "Papelaria", "slug": "papelaria"}},
+              {"id": "demo-2", "name": "Marcador de página", "slug": "marcador", "description": "Modelo em tecido.", "priceCents": 1200, "stock": 0, "imageUrl": None, "category": {"name": "Leitura", "slug": "leitura"}},
+          ]
+          Path('frontend/dist/api/products').write_text(json.dumps({"items": products, "pagination": {"total": 2, "page": 1, "pages": 1, "limit": 12}}))
+          FIXTURE
           python -m http.server 8181 --directory frontend/dist >/tmp/web-server.log 2>&1 &
           curl --retry 12 --retry-all-errors --retry-delay 1 -fsS http://localhost:8181/ -o /dev/null
           mkdir -p capturas
@@ -36,11 +47,14 @@ jobs:
                   wait = WebDriverWait(browser, 20)
                   find = lambda element_id: browser.find_element(By.ID, element_id)
                   wait.until(lambda b: b.find_element(By.CSS_SELECTOR, ".wordmark").is_displayed())
+                  cards = wait.until(lambda b: b.find_elements(By.CSS_SELECTOR, '.product-card'))
+                  assert not cards[1].find_element(By.TAG_NAME, 'button').is_enabled()
                   browser.save_screenshot(f'capturas/interface-{width}.png')
                   assert browser.execute_script('return document.documentElement.scrollWidth <= window.innerWidth')
+                  cards[0].find_element(By.TAG_NAME, 'button').click()
                   browser.find_element(By.CSS_SELECTOR, 'a[href="/carrinho"]').click()
                   wait.until(lambda b: '/carrinho' in b.current_url)
-                  assert browser.find_element(By.TAG_NAME, 'h1').is_displayed()
+                  assert wait.until(lambda b: b.find_element(By.CSS_SELECTOR, '.cart-item h2').text) == 'Caderno pontilhado'
           PYTEST
       - uses: actions/upload-artifact@v4
         if: always()
