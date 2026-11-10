@@ -1,30 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { createRequire } from "node:module";
-import { fileURLToPath } from "node:url";
-
-const require = createRequire(new URL("../package.json", import.meta.url));
-const ts = require("typescript");
-const source = readFileSync(new URL("../src/lib/cart.ts", import.meta.url), "utf8");
-const code = ts.transpileModule(source, {
-  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
-}).outputText;
+import { readCart, setCartQuantity } from "../src/lib/cart.ts";
 
 function cartWithStorage(initial) {
   const storage = new Map([["ecommerce-cart-v1", JSON.stringify(initial)]]);
-  const exports = {};
-  const window = {
+  globalThis.window = {
     localStorage: {
       getItem: (key) => storage.get(key) ?? null,
       setItem: (key, value) => storage.set(key, value),
     },
     dispatchEvent: () => {},
   };
-  new Function("exports", "window", "Event", code)(
-    exports, window, class Event { constructor(name) { this.type = name; } }
-  );
-  return exports;
+  return { readCart, setCartQuantity };
 }
 
 const product = (id, quantity = 1) => ({
