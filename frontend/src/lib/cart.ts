@@ -31,8 +31,16 @@ export function readCart(): CartItem[] {
       item.quantity <= 99 &&
       (item.imageUrl === null || typeof item.imageUrl === "string")
     );
-    memoryCart = items;
-    return items;
+    // Old or tampered browser storage may contain the same product twice.
+    // Keep the first occurrence so checkout never sends duplicate product IDs.
+    const seen = new Set<string>();
+    const uniqueItems = items.filter((item) => {
+      if (!item.id.trim() || seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    });
+    memoryCart = uniqueItems;
+    return uniqueItems;
   } catch {
     return memoryCart;
   }
@@ -64,6 +72,9 @@ export function addToCart(product: CartProduct): void {
 }
 
 export function setCartQuantity(productId: string, quantity: number): CartItem[] {
+  if (!Number.isFinite(quantity)) {
+    throw new RangeError("Cart quantity must be a finite number");
+  }
   const items = readCart().map((item) => item.id === productId
     ? { ...item, quantity: Math.max(1, Math.min(99, Math.trunc(quantity))) }
     : item);

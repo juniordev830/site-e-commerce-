@@ -25,6 +25,8 @@ jobs:
         run: npm run postinstall -w backend
       - name: Audit dependency vulnerabilities
         run: npm audit --audit-level=high
+      - name: Unit tests for browser cart persistence
+        run: node --experimental-strip-types --test frontend/tests/cart.test.mjs
       - run: npm run typecheck
       - run: npm run build
       - name: Integration tests for checkout and authorization
