@@ -93,3 +93,7 @@ Este projeto está em desenvolvimento. As próximas etapas devem ser implementad
 ## Autor
 
 João Junior — [GitHub](https://github.com/juniordev830)
+
+## Validação e manutenção
+
+Para revisar alterações neste projeto, consulte o [guia técnico de validação](docs/GUIA_DE_VALIDACAO.md), com comandos, cenários de regressão e próximos incrementos.
