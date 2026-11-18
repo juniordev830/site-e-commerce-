@@ -1,10 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { addToCart, readCart, setCartQuantity } from "../src/lib/cart.ts";
+import { addToCart, readCart, removePurchasedItems, setCartQuantity, subscribeToCart } from "../src/lib/cart.ts";
 
 function cartWithStorage(initial) {
   const storage = new Map([["ecommerce-cart-v1", JSON.stringify(initial)]]);
   const state = { writable: true };
+  const events = new Map();
   globalThis.window = {
     localStorage: {
       getItem: (key) => storage.get(key) ?? null,
@@ -14,8 +15,10 @@ function cartWithStorage(initial) {
       },
     },
     dispatchEvent: () => {},
+    addEventListener: (name, listener) => events.set(name, listener),
+    removeEventListener: (name) => events.delete(name),
   };
-  return { addToCart, readCart, setCartQuantity, state, storage };
+  return { addToCart, readCart, setCartQuantity, state, storage, events };
 }
 
 const product = (id, quantity = 1) => ({
@@ -51,4 +54,26 @@ test("falha de gravação preserva o carrinho da sessão até a próxima gravaç
   cart.state.writable = true;
   cart.addToCart(product("b"));
   assert.deepEqual(JSON.parse(cart.storage.get("ecommerce-cart-v1")), [product("a", 4), product("b")]);
+});
+
+test("confirmação do pedido preserva novos produtos e unidades adicionados durante a espera", () => {
+  const cart = cartWithStorage([product("a", 2), product("b")]);
+  const purchased = cart.readCart();
+  cart.storage.set("ecommerce-cart-v1", JSON.stringify([product("a", 3), product("b"), product("c")]));
+  assert.deepEqual(removePurchasedItems(purchased), [product("a"), product("c")]);
+  assert.deepEqual(cart.readCart(), [product("a"), product("c")]);
+  assert.deepEqual(purchased, [product("a", 2), product("b")]);
+});
+
+test("atualização entre abas ignora outras chaves e libera os ouvintes ao sair", () => {
+  const cart = cartWithStorage([]);
+  let updates = 0;
+  const unsubscribe = subscribeToCart(() => updates++);
+  cart.events.get("storage")({ key: "outra-chave" });
+  cart.events.get("storage")({ key: "ecommerce-cart-v1" });
+  cart.events.get("storage")({ key: null });
+  cart.events.get("ecommerce-cart-updated")();
+  unsubscribe();
+  assert.equal(updates, 3);
+  assert.equal(cart.events.size, 0);
 });

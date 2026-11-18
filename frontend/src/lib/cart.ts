@@ -100,4 +100,28 @@ export function clearCart(): void {
   persist([]);
 }
 
+export function removePurchasedItems(purchased: readonly Pick<CartItem, "id" | "quantity">[]): CartItem[] {
+  const quantities = new Map(purchased.map(item => [item.id, item.quantity]));
+  const remaining = readCart().flatMap(item => {
+    const purchasedQuantity = quantities.get(item.id);
+    if (purchasedQuantity === undefined) return [item];
+    const quantity = item.quantity - purchasedQuantity;
+    return quantity > 0 ? [{ ...item, quantity }] : [];
+  });
+  persist(remaining);
+  return remaining;
+}
+
+export function subscribeToCart(listener: () => void): () => void {
+  function onStorage(event: StorageEvent) {
+    if (event.key === STORAGE_KEY || event.key === null) listener();
+  }
+  window.addEventListener(CART_EVENT, listener);
+  window.addEventListener("storage", onStorage);
+  return () => {
+    window.removeEventListener(CART_EVENT, listener);
+    window.removeEventListener("storage", onStorage);
+  };
+}
+
 export const cartUpdatedEvent = CART_EVENT;
