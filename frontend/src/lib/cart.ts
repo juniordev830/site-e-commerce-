@@ -10,11 +10,16 @@ export type CartItem = CartProduct & { quantity: number };
 const STORAGE_KEY = "ecommerce-cart-v1";
 const CART_EVENT = "ecommerce-cart-updated";
 let memoryCart: CartItem[] = [];
+let memoryHasUnsavedChanges = false;
 
 export function readCart(): CartItem[] {
+  if (memoryHasUnsavedChanges) return memoryCart;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return memoryCart;
+    if (raw === null) {
+      memoryCart = [];
+      return memoryCart;
+    }
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return memoryCart;
     const items = parsed.filter((item): item is CartItem =>
@@ -50,8 +55,10 @@ function persist(items: CartItem[]): void {
   memoryCart = items;
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    memoryHasUnsavedChanges = false;
   } catch {
-    // The in-memory copy keeps the cart usable for this page session.
+    // Reads may still succeed while storage is full. Keep the newer in-memory cart.
+    memoryHasUnsavedChanges = true;
   }
   window.dispatchEvent(new Event(CART_EVENT));
 }
@@ -66,9 +73,10 @@ export function addToCart(product: CartProduct): void {
     imageUrl: product.imageUrl,
   };
   const existing = items.find((item) => item.id === product.id);
-  if (existing) existing.quantity = Math.min(99, existing.quantity + 1);
-  else items.push({ ...cartProduct, quantity: 1 });
-  persist(items);
+  const updated = existing
+    ? items.map((item) => item === existing ? { ...item, quantity: Math.min(99, item.quantity + 1) } : item)
+    : [...items, { ...cartProduct, quantity: 1 }];
+  persist(updated);
 }
 
 export function setCartQuantity(productId: string, quantity: number): CartItem[] {
