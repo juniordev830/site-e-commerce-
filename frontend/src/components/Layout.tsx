@@ -1,7 +1,7 @@
 import { Link, Outlet } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
-import { cartUpdatedEvent, readCart } from "../lib/cart";
+import { readCart, subscribeToCart } from "../lib/cart";
 import { STORE_NAME } from "../lib/api";
 
 export function Layout() {
@@ -10,8 +10,7 @@ export function Layout() {
 
   useEffect(() => {
     const syncCart = () => setCartCount(readCart().reduce((sum, item) => sum + item.quantity, 0));
-    window.addEventListener(cartUpdatedEvent, syncCart);
-    return () => window.removeEventListener(cartUpdatedEvent, syncCart);
+    return subscribeToCart(syncCart);
   }, []);
 
   return (
