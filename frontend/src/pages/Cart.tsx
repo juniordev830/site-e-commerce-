@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { api, ApiError } from "../lib/api";
-import { cartUpdatedEvent, clearCart, readCart, removeFromCart, setCartQuantity, type CartItem } from "../lib/cart";
+import { readCart, removeFromCart, removePurchasedItems, setCartQuantity, subscribeToCart, type CartItem } from "../lib/cart";
 
 type CreatedOrder = { id: string; status: string; totalCents: number };
 const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
@@ -13,30 +13,35 @@ export default function Cart() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [order, setOrder] = useState<CreatedOrder | null>(null);
+  const checkoutPending = useRef(false);
 
   useEffect(() => {
-    const sync = () => setItems(readCart());
-    window.addEventListener(cartUpdatedEvent, sync);
-    return () => window.removeEventListener(cartUpdatedEvent, sync);
+    return subscribeToCart(() => setItems(readCart()));
   }, []);
 
   const totalCents = items.reduce((sum, item) => sum + item.priceCents * item.quantity, 0);
 
   async function placeOrder() {
-    if (!user || items.length === 0 || busy) return;
+    if (!user || checkoutPending.current) return;
+    const purchased = readCart().map(({ id, quantity }) => ({ id, quantity }));
+    if (purchased.length === 0) {
+      setItems([]);
+      return;
+    }
+    checkoutPending.current = true;
     setBusy(true);
     setError("");
     try {
       const result = await api<{ order: CreatedOrder }>("/orders", {
         method: "POST",
-        body: { items: items.map(({ id, quantity }) => ({ productId: id, quantity })) },
+        body: { items: purchased.map(({ id, quantity }) => ({ productId: id, quantity })) },
       });
       setOrder(result.order);
-      clearCart();
-      setItems([]);
+      setItems(removePurchasedItems(purchased));
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : "Não foi possível registrar o pedido.");
     } finally {
+      checkoutPending.current = false;
       setBusy(false);
     }
   }
@@ -48,12 +53,12 @@ export default function Cart() {
       {error && <p className="error-message" role="alert">{error}</p>}
       {order && <div className="order-confirmation" role="status"><h2>Pedido registrado</h2><p>Número: {order.id}</p><p>Status: {order.status}</p><p>Total confirmado pelo servidor: {money.format(order.totalCents / 100)}</p><p>O pedido está pendente; nenhum pagamento foi processado.</p></div>}
       {!order && items.length === 0 && <div className="empty"><h2>Carrinho vazio</h2><p>Adicione produtos da vitrine para continuar.</p><Link to="/" className="btn btn-primary">Ver produtos</Link></div>}
-      {!order && items.length > 0 && <>
+      {items.length > 0 && <>
         <div className="cart-items">
           {items.map((item) => <article className="cart-item" key={item.id}>
             {item.imageUrl ? <img src={item.imageUrl} alt="" loading="lazy" /> : <div className="cart-image-placeholder" aria-hidden="true">Sem imagem</div>}
             <div className="cart-item-info"><h2>{item.name}</h2><p>{money.format(item.priceCents / 100)} cada</p><strong>{money.format(item.priceCents * item.quantity / 100)}</strong></div>
-            <div className="cart-controls"><button type="button" className="btn btn-ghost" aria-label={"Diminuir quantidade de " + item.name} disabled={item.quantity <= 1} onClick={() => setItems(setCartQuantity(item.id, item.quantity - 1))}>−</button><span aria-label="Quantidade">{item.quantity}</span><button type="button" className="btn btn-ghost" aria-label={"Aumentar quantidade de " + item.name} disabled={item.quantity >= 99} onClick={() => setItems(setCartQuantity(item.id, item.quantity + 1))}>+</button><button type="button" className="btn btn-ghost" onClick={() => setItems(removeFromCart(item.id))}>Remover</button></div>
+            <div className="cart-controls"><button type="button" className="btn btn-ghost" aria-label={"Diminuir quantidade de " + item.name} disabled={busy || item.quantity <= 1} onClick={() => setItems(setCartQuantity(item.id, item.quantity - 1))}>−</button><span aria-label="Quantidade">{item.quantity}</span><button type="button" className="btn btn-ghost" aria-label={"Aumentar quantidade de " + item.name} disabled={busy || item.quantity >= 99} onClick={() => setItems(setCartQuantity(item.id, item.quantity + 1))}>+</button><button type="button" className="btn btn-ghost" disabled={busy} onClick={() => setItems(removeFromCart(item.id))}>Remover</button></div>
           </article>)}
         </div>
         <div className="cart-summary"><p><span>Subtotal estimado</span><strong>{money.format(totalCents / 100)}</strong></p><small>O preço e o estoque serão validados novamente pelo servidor ao registrar o pedido.</small>

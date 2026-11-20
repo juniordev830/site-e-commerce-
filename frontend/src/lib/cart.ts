@@ -10,11 +10,16 @@ export type CartItem = CartProduct & { quantity: number };
 const STORAGE_KEY = "ecommerce-cart-v1";
 const CART_EVENT = "ecommerce-cart-updated";
 let memoryCart: CartItem[] = [];
+let memoryHasUnsavedChanges = false;
 
 export function readCart(): CartItem[] {
+  if (memoryHasUnsavedChanges) return memoryCart;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return memoryCart;
+    if (raw === null) {
+      memoryCart = [];
+      return memoryCart;
+    }
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return memoryCart;
     const items = parsed.filter((item): item is CartItem =>
@@ -50,8 +55,10 @@ function persist(items: CartItem[]): void {
   memoryCart = items;
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    memoryHasUnsavedChanges = false;
   } catch {
-    // The in-memory copy keeps the cart usable for this page session.
+    // Reads may still succeed while storage is full. Keep the newer in-memory cart.
+    memoryHasUnsavedChanges = true;
   }
   window.dispatchEvent(new Event(CART_EVENT));
 }
@@ -66,9 +73,10 @@ export function addToCart(product: CartProduct): void {
     imageUrl: product.imageUrl,
   };
   const existing = items.find((item) => item.id === product.id);
-  if (existing) existing.quantity = Math.min(99, existing.quantity + 1);
-  else items.push({ ...cartProduct, quantity: 1 });
-  persist(items);
+  const updated = existing
+    ? items.map((item) => item === existing ? { ...item, quantity: Math.min(99, item.quantity + 1) } : item)
+    : [...items, { ...cartProduct, quantity: 1 }];
+  persist(updated);
 }
 
 export function setCartQuantity(productId: string, quantity: number): CartItem[] {
@@ -90,6 +98,30 @@ export function removeFromCart(productId: string): CartItem[] {
 
 export function clearCart(): void {
   persist([]);
+}
+
+export function removePurchasedItems(purchased: readonly Pick<CartItem, "id" | "quantity">[]): CartItem[] {
+  const quantities = new Map(purchased.map(item => [item.id, item.quantity]));
+  const remaining = readCart().flatMap(item => {
+    const purchasedQuantity = quantities.get(item.id);
+    if (purchasedQuantity === undefined) return [item];
+    const quantity = item.quantity - purchasedQuantity;
+    return quantity > 0 ? [{ ...item, quantity }] : [];
+  });
+  persist(remaining);
+  return remaining;
+}
+
+export function subscribeToCart(listener: () => void): () => void {
+  function onStorage(event: StorageEvent) {
+    if (event.key === STORAGE_KEY || event.key === null) listener();
+  }
+  window.addEventListener(CART_EVENT, listener);
+  window.addEventListener("storage", onStorage);
+  return () => {
+    window.removeEventListener(CART_EVENT, listener);
+    window.removeEventListener("storage", onStorage);
+  };
 }
 
 export const cartUpdatedEvent = CART_EVENT;
