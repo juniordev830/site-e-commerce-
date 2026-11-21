@@ -4,9 +4,13 @@ import { prisma } from "../lib/prisma.js";
 import { HttpError } from "../middleware/errors.js";
 import { requireAuth } from "../middleware/auth.js";
 
+// Query parameters must be ordinary decimal integers, not hex/scientific notation.
+const decimalQueryInt = (maximum: number) =>
+  z.string().regex(/^[0-9]+$/).transform(Number).pipe(z.number().int().min(1).max(maximum));
+
 const querySchema = z.object({
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(50).default(12),
+  page: decimalQueryInt(100_000).default(1),
+  limit: decimalQueryInt(50).default(12),
   search: z.string().trim().max(100).optional(),
   category: z.string().trim().max(80).optional(),
 });
