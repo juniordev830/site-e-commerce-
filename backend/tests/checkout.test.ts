@@ -76,6 +76,11 @@ test("checkout enforces sessions, ownership, stock and monetary bounds", async (
     for (const query of ["page=0", "page=100001", "limit=51", "limit=0", "page=NaN"]) {
       assert.equal((await request("/orders?" + query, undefined, cookie)).status, 400, query);
     }
+    // Order query numbers must also be canonical decimal strings, not coercible floats.
+    for (const query of ["page=1e1", "page=0x10", "page=1.0", "limit=2e1",
+                         "limit=", "page=2&page=3", "limit=1&limit=2"]) {
+      assert.equal((await request("/orders?" + query, undefined, cookie)).status, 400, query);
+    }
     assert.equal((await request("/orders", {items: [{productId: product.id, quantity: 2}]}, cookie)).status, 409);
     await prisma.product.update({where: {id: product.id}, data: {priceCents: 100000000, stock: 99}});
     assert.equal((await request("/orders", {items: [{productId: product.id, quantity: 99}]}, cookie)).status, 400);
