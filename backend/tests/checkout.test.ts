@@ -33,6 +33,17 @@ test("checkout enforces sessions, ownership, stock and monetary bounds", async (
     const live = await request("/health/live");
     assert.equal(live.status, 200);
     assert.deepEqual(await live.json(), {status: "ok"});
+    // Reject malformed public catalog pagination without hitting the database.
+    for (const query of [
+      "page=0", "page=100001", "page=-1", "page=1e1", "page=0x10",
+      "page=", "page=2&page=3", "limit=51", "limit=1e1", "limit=1&limit=2"
+    ]) {
+      const response = await request("/products?" + query);
+      assert.equal(response.status, 400, query);
+    }
+    const catalog = await request("/products?page=1&limit=1");
+    assert.equal(catalog.status, 200);
+    assert.deepEqual((await catalog.json()).pagination, {page: 1, limit: 1, total: 0, pages: 0});
     assert.equal((await request("/orders")).status, 401);
     const signup = await request("/auth/register", {name: "Alice", email: "alice@example.com", password: "safe-password-123"});
     assert.equal(signup.status, 201);
