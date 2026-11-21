@@ -16,9 +16,12 @@ const orderSchema = z.object({
   }
 });
 
+const positiveDecimalQuery = (max: number) =>
+  z.string().regex(/^[0-9]+$/).transform(Number).pipe(z.number().int().min(1).max(max));
+
 const ordersListQuerySchema = z.object({
-  page: z.coerce.number().int().min(1).max(100_000).default(1),
-  limit: z.coerce.number().int().min(1).max(50).default(20),
+  page: positiveDecimalQuery(100_000).default(1),
+  limit: positiveDecimalQuery(50).default(20),
 });
 
 export const ordersRouter = Router();
