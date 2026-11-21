@@ -97,3 +97,5 @@ João Junior — [GitHub](https://github.com/juniordev830)
 ## Validação e manutenção
 
 Para revisar alterações neste projeto, consulte o [guia técnico de validação](docs/GUIA_DE_VALIDACAO.md), com comandos, cenários de regressão e próximos incrementos.
+
+A listagem de produtos e pedidos aceita `page` e `limit` como números inteiros decimais positivos, sem notação científica, hexadecimal ou parâmetros duplicados. O limite de página é 100.000 e o de itens por consulta é 50.
