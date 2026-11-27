@@ -49,6 +49,22 @@ test("checkout enforces sessions, ownership, stock and monetary bounds", async (
     assert.equal(signup.status, 201);
     const cookie = signup.headers.get("set-cookie")!.split(";")[0];
     assert.equal((await request("/auth/me", undefined, cookie)).status, 200);
+
+    // Passwords that share bcrypt's former 72-byte prefix must remain distinct.
+    const unicodePassword = "á".repeat(40);
+    const unicodeSignup = await request("/auth/register", {
+      name: "Unicode User", email: "unicode@example.com", password: unicodePassword
+    });
+    assert.equal(unicodeSignup.status, 201);
+    const wrongUnicodeSuffix = await request("/auth/login", {
+      email: "unicode@example.com", password: "á".repeat(39) + "b"
+    });
+    assert.equal(wrongUnicodeSuffix.status, 401);
+    const correctUnicodePassword = await request("/auth/login", {
+      email: "unicode@example.com", password: unicodePassword
+    });
+    assert.equal(correctUnicodePassword.status, 200);
+
     const other = await request("/auth/register", {name: "Bob", email: "bob@example.com", password: "safe-password-123"});
     const otherCookie = other.headers.get("set-cookie")!.split(";")[0];
     const product = await prisma.product.create({data: {name: "Produto", slug: "produto", description: "Teste", stock: 2, priceCents: 1000}});
