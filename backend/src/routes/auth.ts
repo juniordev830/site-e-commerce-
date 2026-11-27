@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { createHash } from "node:crypto";
 import { Router, type RequestHandler, type Response } from "express";
 import rateLimit from "express-rate-limit";
 import { z } from "zod";
@@ -8,7 +9,27 @@ import { COOKIE_NAME, requireAuth, signToken } from "../middleware/auth.js";
 import { HttpError } from "../middleware/errors.js";
 
 const BCRYPT_COST = 12;
-const DUMMY_HASH = bcrypt.hashSync("senha-ficticia", BCRYPT_COST);
+const PASSWORD_HASH_PREFIX = "v2$";
+const MAX_PASSWORD_BYTES = 1024;
+
+function passwordMaterial(password: string): string {
+  return "sha256:" + createHash("sha256").update(password, "utf8").digest("hex");
+}
+
+async function hashPassword(password: string): Promise<string> {
+  return PASSWORD_HASH_PREFIX + await bcrypt.hash(passwordMaterial(password), BCRYPT_COST);
+}
+
+async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
+  if (storedHash.startsWith(PASSWORD_HASH_PREFIX)) {
+    return bcrypt.compare(passwordMaterial(password), storedHash.slice(PASSWORD_HASH_PREFIX.length));
+  }
+  // Legacy bcrypt hashes truncate after 72 bytes. Reject ambiguous long inputs.
+  if (Buffer.byteLength(password, "utf8") > 72) return false;
+  return bcrypt.compare(password, storedHash);
+}
+
+const DUMMY_HASH = PASSWORD_HASH_PREFIX + bcrypt.hashSync(passwordMaterial("senha-ficticia"), BCRYPT_COST);
 
 const publicUserSelect = {
   id: true,
@@ -22,9 +43,16 @@ const emailSchema = z.string().trim().toLowerCase().pipe(z.email("E-mail inváli
 const registerSchema = z.object({
   name: z.string().trim().min(2, "Informe seu nome").max(80, "O nome pode ter no máximo 80 caracteres"),
   email: emailSchema,
-  password: z.string().min(8, "A senha precisa ter ao menos 8 caracteres").max(72, "A senha pode ter no máximo 72 caracteres"),
+  password: z.string().min(8, "A senha precisa ter ao menos 8 caracteres")
+    .max(72, "A senha pode ter no máximo 72 caracteres")
+    .refine((value) => Buffer.byteLength(value, "utf8") <= MAX_PASSWORD_BYTES, "A senha excede o limite seguro de bytes"),
 });
-const loginSchema = z.object({ email: emailSchema, password: z.string().min(1, "Informe sua senha") });
+const loginSchema = z.object({
+  email: emailSchema,
+  password: z.string().min(1, "Informe sua senha")
+    .max(72, "A senha pode ter no máximo 72 caracteres")
+    .refine((value) => Buffer.byteLength(value, "utf8") <= MAX_PASSWORD_BYTES, "A senha excede o limite seguro de bytes"),
+});
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -50,15 +78,15 @@ const sameOrigin: RequestHandler = (req, _res, next) => {
   next();
 };
 
-function startSession(res: Response, userId: string) {
-  res.cookie(COOKIE_NAME, signToken(userId), { ...cookieOptions, maxAge: config.JWT_EXPIRES_SECONDS * 1000 });
+function startSession(res: Response, userId: string, tokenVersion = 0) {
+  res.cookie(COOKIE_NAME, signToken(userId, tokenVersion), { ...cookieOptions, maxAge: config.JWT_EXPIRES_SECONDS * 1000 });
 }
 
 export const authRouter = Router();
 
 authRouter.post("/register", sameOrigin, authLimiter, async (req, res) => {
   const { name, email, password } = registerSchema.parse(req.body);
-  const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
+  const passwordHash = await hashPassword(password);
   try {
     const user = await prisma.user.create({ data: { name, email, passwordHash }, select: publicUserSelect });
     startSession(res, user.id);
@@ -74,13 +102,24 @@ authRouter.post("/register", sameOrigin, authLimiter, async (req, res) => {
 authRouter.post("/login", sameOrigin, authLimiter, async (req, res) => {
   const { email, password } = loginSchema.parse(req.body);
   const user = await prisma.user.findUnique({ where: { email } });
-  const passwordMatches = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
+  const storedHash = user?.passwordHash ?? DUMMY_HASH;
+  const passwordMatches = await verifyPassword(password, storedHash);
   if (!user || !passwordMatches) throw new HttpError(401, "E-mail ou senha incorretos");
-  startSession(res, user.id);
+  if (!user.passwordHash.startsWith(PASSWORD_HASH_PREFIX)) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash: await hashPassword(password) },
+    });
+  }
+  startSession(res, user.id, user.tokenVersion);
   res.json({ user: { id: user.id, name: user.name, email: user.email, role: user.role, createdAt: user.createdAt } });
 });
 
-authRouter.post("/logout", sameOrigin, (_req, res) => {
+authRouter.post("/logout", sameOrigin, requireAuth, async (req, res) => {
+  await prisma.user.update({
+    where: { id: req.userId! },
+    data: { tokenVersion: { increment: 1 } },
+  });
   res.clearCookie(COOKIE_NAME, cookieOptions);
   res.status(204).end();
 });
