@@ -78,8 +78,8 @@ const sameOrigin: RequestHandler = (req, _res, next) => {
   next();
 };
 
-function startSession(res: Response, userId: string) {
-  res.cookie(COOKIE_NAME, signToken(userId), { ...cookieOptions, maxAge: config.JWT_EXPIRES_SECONDS * 1000 });
+function startSession(res: Response, userId: string, tokenVersion = 0) {
+  res.cookie(COOKIE_NAME, signToken(userId, tokenVersion), { ...cookieOptions, maxAge: config.JWT_EXPIRES_SECONDS * 1000 });
 }
 
 export const authRouter = Router();
@@ -111,11 +111,15 @@ authRouter.post("/login", sameOrigin, authLimiter, async (req, res) => {
       data: { passwordHash: await hashPassword(password) },
     });
   }
-  startSession(res, user.id);
+  startSession(res, user.id, user.tokenVersion);
   res.json({ user: { id: user.id, name: user.name, email: user.email, role: user.role, createdAt: user.createdAt } });
 });
 
-authRouter.post("/logout", sameOrigin, (_req, res) => {
+authRouter.post("/logout", sameOrigin, requireAuth, async (req, res) => {
+  await prisma.user.update({
+    where: { id: req.userId! },
+    data: { tokenVersion: { increment: 1 } },
+  });
   res.clearCookie(COOKIE_NAME, cookieOptions);
   res.status(204).end();
 });

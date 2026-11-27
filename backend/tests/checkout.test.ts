@@ -14,8 +14,12 @@ test("checkout enforces sessions, ownership, stock and monetary bounds", async (
   process.env.NODE_ENV = "test";
   process.env.JWT_SECRET = randomBytes(32).toString("hex");
   const migration = readFileSync(new URL("../prisma/migrations/0001_init/migration.sql", import.meta.url), "utf8");
+  const tokenVersionMigration = readFileSync(
+    new URL("../prisma/migrations/20261127140000_add_user_token_version/migration.sql", import.meta.url), "utf8"
+  );
   const setup = new DatabaseSync(db);
   setup.exec(migration);
+  setup.exec(tokenVersionMigration);
   setup.close();
   const {createApp} = await import("../src/app.js");
   const {prisma} = await import("../src/lib/prisma.js");
@@ -102,6 +106,11 @@ test("checkout enforces sessions, ownership, stock and monetary bounds", async (
     assert.equal((await request("/orders", {items: [{productId: product.id, quantity: 99}]}, cookie)).status, 400);
     assert.equal((await prisma.product.findUniqueOrThrow({where: {id: product.id}})).stock, 99);
     assert.equal((await prisma.order.count()).valueOf(), 1);
+
+    const logout = await request("/auth/logout", {}, cookie);
+    assert.equal(logout.status, 204);
+    assert.equal((await request("/auth/me", undefined, cookie)).status, 401);
+    assert.equal((await request("/orders", undefined, cookie)).status, 401);
   } finally {
     await new Promise<void>((resolve, reject) => server.close(err => err ? reject(err) : resolve()));
     await prisma.$disconnect();
