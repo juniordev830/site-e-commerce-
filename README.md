@@ -1,5 +1,7 @@
 # Minha Loja — E-commerce Full Stack
 
+**Navegação** · [Stack](#stack) · [Requisitos](#requisitos) · [Instalação](#instalação) · [Código e estudo](docs/ENGENHARIA_REVERSA.md)
+
 Projeto de portfólio desenvolvido por etapas para praticar uma aplicação web com frontend React e API Node.js. A base inclui autenticação, catálogo, carrinho e criação de pedidos pendentes. Pagamentos e entrega real ainda não estão implementados.
 
 ## Stack
@@ -118,3 +120,7 @@ João Junior — [GitHub](https://github.com/juniordev830)
 Para revisar alterações neste projeto, consulte o [guia técnico de validação](docs/GUIA_DE_VALIDACAO.md), com comandos, cenários de regressão e próximos incrementos.
 
 A listagem de produtos e pedidos aceita `page` e `limit` como números inteiros decimais positivos, sem notação científica, hexadecimal ou parâmetros duplicados. O limite de página é 100.000 e o de itens por consulta é 50.
+
+## Código e roteiro de estudo
+
+Onde deve ficar a validação do preço ao criar um pedido e por quê? O [guia de engenharia reversa](docs/ENGENHARIA_REVERSA.md) reúne o mapa dos módulos e uma pergunta técnica baseada no projeto.
