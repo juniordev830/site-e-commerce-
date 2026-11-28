@@ -1,6 +1,8 @@
 # Minha Loja — E-commerce Full Stack
 
-Projeto de portfólio desenvolvido por etapas para praticar uma aplicação web com frontend React e API Node.js. A fase atual estabelece a base do projeto, configuração do banco e autenticação inicial; catálogo, carrinho, checkout e pagamentos devem ser considerados concluídos somente quando implementados e testados no código.
+**Navegação** · [Stack](#stack) · [Requisitos](#requisitos) · [Instalação](#instalação) · [Código e estudo](docs/ENGENHARIA_REVERSA.md)
+
+Projeto de portfólio desenvolvido por etapas para praticar uma aplicação web com frontend React e API Node.js. A base inclui autenticação, catálogo, carrinho e criação de pedidos pendentes. Pagamentos e entrega real ainda não estão implementados.
 
 ## Stack
 
@@ -35,6 +37,22 @@ npm run dev
 
 O comando raiz inicia os workspaces de backend e frontend em paralelo. Consulte as mensagens de inicialização para confirmar as portas usadas localmente.
 
+### Configuração local e diagnóstico
+
+No PowerShell, a partir da raiz:
+
+```powershell
+Copy-Item backend/.env.example backend/.env
+Copy-Item frontend/.env.example frontend/.env
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+```
+
+Copie os exemplos somente em uma instalação nova, sem sobrescrever configurações existentes. Use a chave gerada em `JWT_SECRET` e defina uma senha própria para `SEED_ADMIN_PASSWORD` antes de criar o administrador. Prepare o banco com `npm run db:migrate` e, se necessário, `npm run db:seed`. Use dados fictícios.
+
+O backend usa a porta 3333 no exemplo de configuração; o Vite usa 5173 e encaminha `/api` para `http://localhost:3333`. Abra `http://localhost:5173` com ambos os processos ativos. Se mudar a porta da API, ajuste também o destino do proxy em `frontend/vite.config.ts`. Mantenha `VITE_API_URL` vazio para utilizar o proxy local.
+
+Se o npm informar que não encontrou workspaces, confirme que o terminal está na raiz que contém `package.json`, `backend/` e `frontend/`. Para isolar falhas, execute `npm run dev -w backend` e `npm run dev -w frontend` em terminais separados. Não apague o banco para corrigir falhas de configuração.
+
 ## Catálogo
 
 A API pública oferece `GET /api/products` (paginação e filtros `search`/`category`) e `GET /api/products/:slug`. Administradores autenticados podem cadastrar produtos com `POST /api/products`; o corpo aceita `name`, `slug`, `description`, `priceCents`, `stock` e campos opcionais `imageUrl` (HTTPS) e `categoryId`. Valores monetários são informados em centavos. O catálogo mostra apenas produtos ativos.
@@ -52,6 +70,7 @@ A página inicial permite adicionar produtos ao carrinho, que é guardado localm
 ```bash
 npm run typecheck
 npm run build
+npm test -w backend
 ```
 
 Para preparar ou atualizar o banco local, confira primeiro a configuração do backend e execute os comandos necessários:
@@ -60,6 +79,8 @@ Para preparar ou atualizar o banco local, confira primeiro a configuração do b
 npm run db:migrate
 npm run db:seed
 ```
+
+Para aplicar migrações existentes sem criar novas, o projeto também fornece `npm run db:deploy`. O script de teste do backend executa `tests/checkout.test.ts`; não equivale a uma suíte completa de integração frontend/backend.
 
 Use `npm run db:studio` para inspecionar o banco quando a configuração local estiver pronta.
 
@@ -99,3 +120,7 @@ João Junior — [GitHub](https://github.com/juniordev830)
 Para revisar alterações neste projeto, consulte o [guia técnico de validação](docs/GUIA_DE_VALIDACAO.md), com comandos, cenários de regressão e próximos incrementos.
 
 A listagem de produtos e pedidos aceita `page` e `limit` como números inteiros decimais positivos, sem notação científica, hexadecimal ou parâmetros duplicados. O limite de página é 100.000 e o de itens por consulta é 50.
+
+## Código e roteiro de estudo
+
+Onde deve ficar a validação do preço ao criar um pedido e por quê? O [guia de engenharia reversa](docs/ENGENHARIA_REVERSA.md) reúne o mapa dos módulos e uma pergunta técnica baseada no projeto.
